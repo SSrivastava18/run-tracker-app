@@ -14,7 +14,7 @@ function TabIcon({ icon, label, focused }) {
       <Text style={{ fontSize: 18, opacity: focused ? 1 : 0.4 }}>{icon}</Text>
       <Text style={{
         fontFamily: 'monospace', fontSize: 8, letterSpacing: 1,
-        color: focused ? '#00f5a0' : '#5a6070',
+        color: focused ? '#f57f00' : '#5a6070',
       }}>
         {label}
       </Text>
