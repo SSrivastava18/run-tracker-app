@@ -33,10 +33,7 @@ const firebaseConfig = {
   apiKey: "AIzaSyAibdAvzWJyzfkZee4-re_Kl_q3RyX3z5c",
   authDomain: "zonewars-40dde.firebaseapp.com",
   projectId: "zonewars-40dde",
-
-  // ✅ FIXED BUCKET (IMPORTANT)
   storageBucket: "zonewars-40dde.appspot.com",
-
   messagingSenderId: "732455723038",
   appId: "1:732455723038:web:c0deb442ff1f7bd93a0e0f",
 };
@@ -45,16 +42,14 @@ const firebaseConfig = {
 // Prevent duplicate app initialization
 const app = getApps().length === 0 ? initializeApp(firebaseConfig) : getApp();
 
-// ─── AUTH INITIALIZATION (NO CRASH VERSION) ───────────────────
+// ─── AUTH INITIALIZATION ──────────────────────────────────────
 let auth;
 
 try {
-  // try initializing once
   auth = initializeAuth(app, {
     persistence: getReactNativePersistence(ReactNativeAsyncStorage),
   });
 } catch (error) {
-  // if already initialized → reuse existing instance
   if (error.code === "auth/already-initialized") {
     auth = getAuth(app);
   } else {
@@ -66,14 +61,11 @@ const db = getFirestore(app);
 
 // ───────────────── AUTH ─────────────────
 
-// register user
 export const registerUser = async (email, password, username) => {
   try {
     const cred = await createUserWithEmailAndPassword(auth, email, password);
 
-    await updateProfile(cred.user, {
-      displayName: username,
-    });
+    await updateProfile(cred.user, { displayName: username });
 
     await setDoc(doc(db, "players", cred.user.uid), {
       uid: cred.user.uid,
@@ -93,7 +85,6 @@ export const registerUser = async (email, password, username) => {
   }
 };
 
-// login user
 export const loginUser = async (email, password) => {
   try {
     const res = await signInWithEmailAndPassword(auth, email, password);
@@ -104,12 +95,9 @@ export const loginUser = async (email, password) => {
   }
 };
 
-export const logoutUser = () => signOut(auth);
-
+export const logoutUser  = () => signOut(auth);
 export const onAuthChange = (cb) => onAuthStateChanged(auth, cb);
-
-// safe current user getter
-export const currentUser = () => auth?.currentUser || null;
+export const currentUser  = () => auth?.currentUser || null;
 
 // ───────────────── PLAYER ─────────────────
 
@@ -133,19 +121,18 @@ export const updatePlayerStats = async (uid, stats) => {
 
 // ───────────────── ZONES ─────────────────
 
-// claim new zone
 export const claimZone = async (zone) => {
   try {
     const zoneRef = doc(collection(db, "zones"));
 
     await setDoc(zoneRef, {
       ...zone,
-      zoneId: zoneRef.id,
-      ownerId: zone.ownerId,
+      zoneId:    zoneRef.id,
+      ownerId:   zone.ownerId,
       ownerName: zone.ownerName,
       ownerColor: zone.ownerColor,
       claimedAt: serverTimestamp(),
-      history: [],
+      history:   [],
     });
 
     return zoneRef.id;
@@ -155,14 +142,14 @@ export const claimZone = async (zone) => {
   }
 };
 
-// capture zone
 export const captureZone = async (zoneId, challenger) => {
   try {
-    const zoneRef = doc(db, "zones", zoneId);
+    const zoneRef  = doc(db, "zones", zoneId);
     const zoneSnap = await getDoc(zoneRef);
 
-    if (!zoneSnap.exists())
+    if (!zoneSnap.exists()) {
       return { success: false, reason: "Zone not found" };
+    }
 
     const zone = zoneSnap.data();
 
@@ -170,40 +157,43 @@ export const captureZone = async (zoneId, challenger) => {
       return { success: false, reason: "You already own this zone" };
     }
 
-    const fasterTime =
-      challenger.durationSeconds < zone.durationSeconds;
-
-    const moreDistance =
-      challenger.distance > zone.distance;
+    const fasterTime   = challenger.durationSeconds < zone.durationSeconds;
+    const moreDistance = challenger.distance > zone.distance;
 
     if (!fasterTime && !moreDistance) {
       return {
         success: false,
-        reason: `Beat owner's time or distance`,
+        reason: "Beat the owner's time or distance to capture",
       };
     }
 
+    // ✅ Build a human-readable reason for the success alert
+    const reasons = [];
+    if (fasterTime)   reasons.push("faster time");
+    if (moreDistance) reasons.push("greater distance");
+    const reason = `You won with a ${reasons.join(" and ")}!`;
+
     await updateDoc(zoneRef, {
-      ownerId: challenger.uid,
-      ownerName: challenger.username,
-      ownerColor: challenger.color,
-      distance: challenger.distance,
+      ownerId:         challenger.uid,
+      ownerName:       challenger.username,
+      ownerColor:      challenger.color,
+      distance:        challenger.distance,
       durationSeconds: challenger.durationSeconds,
-      claimedAt: serverTimestamp(),
+      claimedAt:       serverTimestamp(),
       history: [
         ...(zone.history || []),
         {
-          uid: zone.ownerId,
-          name: zone.ownerName,
+          uid:    zone.ownerId,
+          name:   zone.ownerName,
           lostAt: new Date().toISOString(),
         },
       ],
     });
 
-    return { success: true };
+    return { success: true, reason };
   } catch (error) {
     console.log("CAPTURE ZONE ERROR:", error);
-    return { success: false };
+    return { success: false, reason: "Something went wrong" };
   }
 };
 
@@ -211,10 +201,7 @@ export const captureZone = async (zoneId, challenger) => {
 
 export const listenToZones = (cb) => {
   return onSnapshot(collection(db, "zones"), (snap) => {
-    const zones = snap.docs.map((d) => ({
-      id: d.id,
-      ...d.data(),
-    }));
+    const zones = snap.docs.map((d) => ({ id: d.id, ...d.data() }));
     cb(zones);
   });
 };
@@ -223,9 +210,8 @@ export const listenToLeaderboard = (cb) => {
   const q = query(
     collection(db, "players"),
     orderBy("zonesOwned", "desc"),
-    limit(20)
+    limit(20),
   );
-
   return onSnapshot(q, (snap) => {
     cb(snap.docs.map((d) => d.data()));
   });
@@ -233,10 +219,13 @@ export const listenToLeaderboard = (cb) => {
 
 // ───────────────── UTILS ─────────────────
 
+// ✅ Fixed: now correctly handles hours, and no doubled minutes bug
 export const formatDuration = (seconds = 0) => {
-  const m = Math.floor(seconds / 60).toString().padStart(2, "0");
-  const s = Math.floor(seconds % 60).toString().padStart(2, "0");
-  return `${m}:${s}`;
+  const total = Math.floor(seconds);
+  const h     = Math.floor(total / 3600);
+  const m     = Math.floor((total % 3600) / 60).toString().padStart(2, "0");
+  const s     = (total % 60).toString().padStart(2, "0");
+  return h > 0 ? `${h}:${m}:${s}` : `${m}:${s}`;
 };
 
 const COLORS = [
