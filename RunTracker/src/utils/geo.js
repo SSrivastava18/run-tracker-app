@@ -70,27 +70,29 @@ export function polygonCentroid(points) {
  */
 export function polygonArea(points) {
   if (points.length < 3) return 0;
-  const R  = 6371000;
+  const R     = 6371000;
   const toRad = (d) => (d * Math.PI) / 180;
-  let area = 0;
+  let area    = 0;
   for (let i = 0; i < points.length; i++) {
-    const j   = (i + 1) % points.length;
-    const xi  = toRad(points[i].longitude) * Math.cos(toRad(points[i].latitude)) * R;
-    const yi  = toRad(points[i].latitude)  * R;
-    const xj  = toRad(points[j].longitude) * Math.cos(toRad(points[j].latitude)) * R;
-    const yj  = toRad(points[j].latitude)  * R;
+    const j  = (i + 1) % points.length;
+    const xi = toRad(points[i].longitude) * Math.cos(toRad(points[i].latitude)) * R;
+    const yi = toRad(points[i].latitude)  * R;
+    const xj = toRad(points[j].longitude) * Math.cos(toRad(points[j].latitude)) * R;
+    const yj = toRad(points[j].latitude)  * R;
     area += xi * yj - xj * yi;
   }
   return Math.abs(area / 2);
 }
 
 /**
- * Format seconds to MM:SS
+ * Format seconds to MM:SS or H:MM:SS for runs over an hour
  */
 export function formatDuration(s) {
-  const m = Math.floor(s / 60).toString().padStart(2, '0');
-  const sec = Math.floor(s % 60).toString().padStart(2, '0');
-  return `${m}:${s >= 3600 ? '' : ''}${m}:${sec}`;
+  const totalSecs = Math.floor(s);
+  const h         = Math.floor(totalSecs / 3600);
+  const m         = Math.floor((totalSecs % 3600) / 60).toString().padStart(2, '0');
+  const sec       = (totalSecs % 60).toString().padStart(2, '0');
+  return h > 0 ? `${h}:${m}:${sec}` : `${m}:${sec}`;
 }
 
 /**
