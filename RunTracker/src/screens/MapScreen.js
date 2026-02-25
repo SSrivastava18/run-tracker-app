@@ -221,6 +221,7 @@ export default function MapScreen() {
   const [showClaim,    setShowClaim]    = useState(false);
   const [selectedZone, setSelectedZone] = useState(null);
   const [mapReady,     setMapReady]     = useState(false);
+  const [showZones,    setShowZones]    = useState(false);
 
   // ── Send message to Leaflet ─────────────────────────────────────────────────
   const post = useCallback((msg) => {
@@ -235,8 +236,8 @@ export default function MapScreen() {
 
   // ── Push zones to map ───────────────────────────────────────────────────────
   useEffect(() => {
-    if (mapReady) post({ type: "UPDATE_ZONES", zones });
-  }, [zones, mapReady]);
+    if (mapReady) post({ type: "UPDATE_ZONES", zones: showZones ? zones : [] });
+  }, [zones, mapReady, showZones]);
 
   // ── Push location ───────────────────────────────────────────────────────────
   useEffect(() => {
@@ -389,6 +390,17 @@ export default function MapScreen() {
               </Text>
             </View>
             <View style={styles.topRight}>
+              <TouchableOpacity
+                style={[styles.zonesToggleBtn, showZones && styles.zonesToggleBtnActive]}
+                onPress={() => {
+                  setShowZones(v => !v);
+                  if (selectedZone) setSelectedZone(null);
+                }}
+              >
+                <Text style={[styles.zonesToggleTxt, showZones && styles.zonesToggleTxtActive]}>
+                  ⚑ ZONES
+                </Text>
+              </TouchableOpacity>
               <View style={styles.mapTypePill}>
                 {["standard","satellite"].map((t) => (
                   <TouchableOpacity
@@ -434,7 +446,7 @@ export default function MapScreen() {
               </Text>
             </TouchableOpacity>
             <Text style={styles.zoneCount}>
-              {zones.length} zone{zones.length !== 1 ? "s" : ""} claimed worldwide
+              {zones.length} zone{zones.length !== 1 ? "s" : ""} claimed worldwide · {showZones ? "tap ⚑ ZONES to hide" : "tap ⚑ ZONES to explore"}
             </Text>
           </View>
         </BlurView>
@@ -476,6 +488,11 @@ const styles = StyleSheet.create({
 
   centerBtn:    { width:36, height:36, borderRadius:10, backgroundColor:"#111419", borderWidth:1, borderColor:"#1f242e", alignItems:"center", justifyContent:"center" },
   centerBtnTxt: { color:"#00b8d9", fontSize:16 },
+
+  zonesToggleBtn:       { paddingHorizontal:10, paddingVertical:7, borderRadius:10, backgroundColor:"#111419", borderWidth:1, borderColor:"#1f242e", alignItems:"center", justifyContent:"center" },
+  zonesToggleBtnActive: { backgroundColor:"rgba(0,245,160,0.12)", borderColor:"rgba(0,245,160,0.5)" },
+  zonesToggleTxt:       { color:"#5a6070", fontFamily:"monospace", fontSize:9, fontWeight:"700", letterSpacing:1 },
+  zonesToggleTxtActive: { color:"#00f5a0" },
 
   glassWrap: { overflow:"hidden", borderWidth:1, borderColor:"rgba(255,255,255,0.08)", backgroundColor:"rgba(255,255,255,0.05)" },
 
